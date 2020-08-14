@@ -12,6 +12,8 @@ uses WPFObjects, MouseEventsWPF;
   ToDo:***Проверка на то,можно ли покрыть этой картой другую сделать индексами массива,если индекс прокрываемй карты меньше,то покрыть можно
   ToDo:Добавить в класс Player свойство ход,т.е. может ли игрок ходить сейчас
   ToDo:Сделать проверку,кто будет ходить первым
+  ToDo:После того,как бросили карту,переместить карты ближе к левому краю(выровнять)
+
 }
 
 
@@ -42,6 +44,10 @@ type
     vis: boolean;
     ///Видимость карты
     cvis: boolean;
+    ///True - Если карта на столе
+    table: boolean;
+    ///True - Если карта покрыта
+    cardtoc: boolean;
     ///Список объектов у карты
     OList := new List<ObjectWPF>;
     ///Клик по карте
@@ -108,6 +114,13 @@ type
       cname.ToFront;
     end;
     
+    procedure Destroy;
+    begin
+      cpic.Destroy;
+      cname.Destroy;
+      rec.Destroy;
+    end;
+    
     ///True - если карта козырная
     property Gl: boolean read k write k := value;
     ///Имя карты (Валет,Туз и т.д.)
@@ -120,6 +133,14 @@ type
     property Index: integer read CProp.Name.IndexOf(cnamet);
     ///Видимость карты
     property CVisible: boolean read cvis write begin Visible := value; rec.Visible := value; cvis := value end;
+    ///X
+    property Left: real read x write x := value;
+    ///Y
+    property Top: real read y write y := value;
+    ///True - Если карты на столе
+    property ToTable: boolean read table write table := value;
+    ///True - Если карта покрыта
+    property IsCovered: boolean read cardtoc write cardtoc := value;
   end;
   
   Player = class
@@ -141,10 +162,13 @@ type
     procedure CAdd(c: Card);
     begin
       c.Click += ()->begin
-        C.CVisible := false;
+        C.Destroy;
+        var j := CList.IndexOf(c);
+        for var i := j to CList.Count - 1 do
+          CList[i].AnimeTo(-50, 0, 0.2);
         CList.Remove(c);
+        pcx -= 50;
         CardCount -= 1;
-                ncard.ToString.Println;
       end;
       CList.Add(c);
       CardCount += 1;
@@ -154,6 +178,7 @@ type
     property CurrenCardX: real read pcx write pcx := value;
     property Left: real read px;
     property Top: real read py;
+    ///True - если игрок = пользователю
     property Pyou: boolean read you;
     property CardCount: byte read ncard write ncard := value;
   end;
@@ -210,11 +235,21 @@ type
     
     procedure CToPlayer(var p: Player; n: byte := 1);
     begin
+      if n > MCount
+        then n := MCount;
       for var i := 1 to n do
       begin
         var c := TColoda.Last;
-        var vx := p.CurrenCardX - self.x;
-        var vy := p.Top - self.y;
+        var vx := p.CurrenCardX - x;
+        var vy := p.Top - y;
+        if MCount < 12
+          then $'{i}:{n}:{MCount - 1}'.Println;
+        if n - i = MCount - 1
+        then begin
+          vx += 80;
+          vy += 10;
+          '121'.Println;
+        end;
         c.AnimeTo(vx, vy, 0.2);
         if p.Pyou
           then c.Visible := true;
@@ -225,6 +260,7 @@ type
         MCount -= 1;
         NText.Text := MCount.ToString;
         sleep(150);
+        
       end;
     end;
   
