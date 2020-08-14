@@ -9,7 +9,9 @@ uses WPFObjects, MouseEventsWPF;
 
   ToDo:Изменить класс карты,графические примитывы только 
   ToDo:Сделать две надписи один перевернутый, другой нормальный,на противополженных сторонах
-  ToDo:Проверка на то,можно ли покрыть этой картой другую сделать индексами массива,если индекс прокрываемй карты меньше,то покрыть можно
+  ToDo:***Проверка на то,можно ли покрыть этой картой другую сделать индексами массива,если индекс прокрываемй карты меньше,то покрыть можно
+  ToDo:Добавить в класс Player свойство ход,т.е. может ли игрок ходить сейчас
+  ToDo:Сделать проверку,кто будет ходить первым
 }
 
 
@@ -17,28 +19,6 @@ type
   CProp = static class
     static  Mast := new string[4]('Черви', 'Крести', 'Буби', 'Пики');
     static Name := new string[9]('6', '7', '8', '9', '10', 'В', 'Д', 'К', 'Т');
-  end;
-  
-  Player = class
-  private
-    px, py, pcx: real;
-    pname: string;
-    ncard: byte;
-    t: TextWPF;
-    you: boolean;
-  
-  public
-    constructor(x, y: real; name: string; b: boolean := false);
-    begin
-      (px, py, pname, pcx, you) := (x, y, name, x, b);
-      t := new TextWPF(x + 175, y - 25, name, Colors.Yellow);
-    end;
-    
-    property Name: string read pname;
-    property CurrenCardX: real read pcx write pcx := value;
-    property Left: real read px;
-    property Top: real read py;
-    property Pyou: boolean read you;
   end;
   
   Card = class
@@ -142,6 +122,42 @@ type
     property CVisible: boolean read cvis write begin Visible := value; rec.Visible := value; cvis := value end;
   end;
   
+  Player = class
+  private
+    px, py, pcx: real;
+    pname: string;
+    ncard: byte;
+    t: TextWPF;
+    you: boolean;
+    CList := new List<Card>;
+  
+  public
+    constructor(x, y: real; name: string; b: boolean := false);
+    begin
+      (px, py, pname, pcx, you) := (x, y, name, x, b);
+      t := new TextWPF(x + 175, y - 25, name, Colors.Yellow);
+    end;
+    
+    procedure CAdd(c: Card);
+    begin
+      c.Click += ()->begin
+        C.CVisible := false;
+        CList.Remove(c);
+        CardCount -= 1;
+                ncard.ToString.Println;
+      end;
+      CList.Add(c);
+      CardCount += 1;
+    end;
+    
+    property Name: string read pname;
+    property CurrenCardX: real read pcx write pcx := value;
+    property Left: real read px;
+    property Top: real read py;
+    property Pyou: boolean read you;
+    property CardCount: byte read ncard write ncard := value;
+  end;
+  
   Coloda = class
   private
     x, y: real;
@@ -150,14 +166,14 @@ type
     Koz := CProp.Mast[Random(3)];
     nx := 0;
     CardC: Card;
-    NText:TextWPF;
-    
+    NText: TextWPF;
+  
   //TColoda.Shuffle - Перемешивает случайным образом
   
   public
     constructor(x, y: real);
     begin
-      NText:=new TextWPF(30,y+100,MCount.ToString,Colors.Aqua);
+      NText := new TextWPF(30, y + 100, MCount.ToString, Colors.Aqua);
       (Self.x, Self.y) := (x, y);
       for var i := 0 to CProp.Mast.Length - 1 do
       begin
@@ -166,7 +182,7 @@ type
         begin
           var c := new Card(x, y, CProp.Name[j], mname);
           c.Click += ()->begin
-            //ToDo
+            //ToDo:
           end;
           if Koz = mname
             then c.Gl := true;           
@@ -179,7 +195,7 @@ type
         var cc := TColoda[i];
         if cc.Gl 
         then begin
-          CardC:=cc;
+          CardC := cc;
           var c2 := TColoda[0];
           TColoda[0] := cc;
           TColoda[i] := c2;
@@ -201,13 +217,13 @@ type
         var vy := p.Top - self.y;
         c.AnimeTo(vx, vy, 0.2);
         if p.Pyou
-        then c.Visible := true;
+          then c.Visible := true;
         c.ToFront;
-        
+        p.CAdd(c);
         TColoda.Remove(c);
         p.CurrenCardX += 50;
-        MCount-=1;
-        NText.Text:=MCount.ToString;
+        MCount -= 1;
+        NText.Text := MCount.ToString;
         sleep(150);
       end;
     end;
